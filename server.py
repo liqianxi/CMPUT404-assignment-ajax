@@ -19,14 +19,28 @@
 #
 # remember to:
 #     pip install flask
+# Copyright 2021 Qianxi Li
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+
+#     http://www.apache.org/licenses/LICENSE-2.0
+
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 
 
 import flask
-from flask import Flask, request
+from flask import Flask, request, render_template, redirect
 import json
+
+
 app = Flask(__name__)
 app.debug = True
-
+app.config["CACHE_TYPE"] = "null"
 # An example world
 # {
 #    'a':{'x':1, 'y':2},
@@ -74,27 +88,54 @@ def flask_post_json():
 @app.route("/")
 def hello():
     '''Return something coherent here.. perhaps redirect to /static/index.html '''
-    return None
+    return app.send_static_file('index.html')
 
 @app.route("/entity/<entity>", methods=['POST','PUT'])
 def update(entity):
     '''update the entities via this interface'''
-    return None
+    data = flask_post_json()
+    if request.method == 'POST':
+        myWorld.set(entity,data)
+    elif request.method == 'PUT':
+        for item in data.items():
+            myWorld.update(entity, item[0], item[1])
+
+    response = app.response_class(
+        response=json.dumps(data),
+        status=200,
+        mimetype='application/json'
+    )
+    return response
 
 @app.route("/world", methods=['POST','GET'])    
 def world():
     '''you should probably return the world here'''
-    return None
+    response = app.response_class(
+        response=json.dumps(myWorld.world()),
+        status=200,
+        mimetype='application/json'
+    )
+    return response
 
 @app.route("/entity/<entity>")    
 def get_entity(entity):
     '''This is the GET version of the entity interface, return a representation of the entity'''
-    return None
-
+    response = app.response_class(
+        response=json.dumps(myWorld.get(entity)),
+        status=200,
+        mimetype='application/json'
+    )
+    return response
 @app.route("/clear", methods=['POST','GET'])
 def clear():
     '''Clear the world out!'''
-    return None
+    myWorld.clear()
+    response = app.response_class(
+        response=json.dumps(myWorld.world()),
+        status=200,
+        mimetype='application/json'
+    )
+    return response
 
 if __name__ == "__main__":
     app.run()
