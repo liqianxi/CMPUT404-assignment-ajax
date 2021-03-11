@@ -41,8 +41,10 @@ function sendJSONXMLHTTPRequest(url, objects, callback) {
                     //console.log("get response"+xhr.responseText)
                     //XXX: parse some JSON from the request!
                     //XXX: Pass the data to the callback!
-                    var response = xhr.responseText
-                    //callback(context, response)
+                    var response = xhr.responseText;
+                    if (callback != null){
+                        callback(response)
+                    }
                 }
             } 
             catch(e) {
@@ -50,10 +52,20 @@ function sendJSONXMLHTTPRequest(url, objects, callback) {
             }
         }
     };
-    xhr.open('POST', url, true);
+    var method = 'POST';
+    if (objects==null){
+        method = 'GET';
+    }
+
+    xhr.open(method, url, true);
     xhr.setRequestHeader("Content-type", "application/json;charset=UTF-8");
     xhr.setRequestHeader("Accept", "application/json;charset=UTF-8");
-    xhr.send(JSON.stringify(objects));
+    if (objects!=null){
+        xhr.send(JSON.stringify(objects));
+    }
+    else{
+        xhr.send();
+    }
     //XXX: POST to a URL
     //XXX: set the mimetype and the accept headers!
     // Remember to use application/json !
@@ -150,7 +162,7 @@ function addEntity(entity, data) {
 
     drawNextFrame(); // (but should we?)
     //XXX: Send a XHTML Request that updates the entity you just  modified!
-    sendJSONXMLHTTPRequest("/entity/"+entity, data, null)
+    sendJSONXMLHTTPRequest("/entity/"+entity, data, null);
     
 
 }
@@ -276,20 +288,11 @@ mouse.mousedraggers.push(function(x,y,clicked,e) {
 
 function update() {
     //XXX: TODO Get the world from the webservice using a XMLHTTPRequest
-    //console.log("outworld",world)
-    
-    var xhttp = new XMLHttpRequest();
-    xhttp.onreadystatechange = function() {
-        if (this.readyState == 4 && this.status == 200) {
-            world = JSON.parse(this.responseText);
-            drawFrame();
-            
-        }
-    };
-    xhttp.open("GET", "/world", true);
-    xhttp.setRequestHeader("Accept", "application/json");
-    xhttp.send();
-
+    function callbackFunc(text){
+        world = JSON.parse(text);
+        drawFrame();
+    }
+    sendJSONXMLHTTPRequest("/world", null, callbackFunc);
 }
 
 // 30 frames per second
