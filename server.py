@@ -50,6 +50,7 @@ app.config["CACHE_TYPE"] = "null"
 class World:
     def __init__(self):
         self.clear()
+        self.new_update = {}
         
     def update(self, entity, key, value):
         entry = self.space.get(entity,dict())
@@ -67,6 +68,15 @@ class World:
     
     def world(self):
         return self.space
+    
+    def add_update(self, key, data):
+        self.new_update[key] = data
+
+    def clear_update(self):
+        self.new_update = {}
+
+    def get_update(self):
+        return self.new_update
 
 # you can test your webservice from the commandline
 # curl -v   -H "Content-Type: application/json" -X PUT http://127.0.0.1:5000/entity/X -d '{"x":1,"y":1}' 
@@ -93,7 +103,9 @@ def hello():
 @app.route("/entity/<entity>", methods=['POST','PUT'])
 def update(entity):
     '''update the entities via this interface'''
-    data = flask_post_json()
+    data = flask_post_json()#{'x': 745, 'y': 434, 'colour': 'cyan', 'radius': 10}
+    
+    myWorld.add_update(entity, data)
     if request.method == 'POST':
         myWorld.set(entity,data)
     elif request.method == 'PUT':
@@ -110,11 +122,26 @@ def update(entity):
 @app.route("/world", methods=['POST','GET'])    
 def world():
     '''you should probably return the world here'''
-    response = app.response_class(
-        response=json.dumps(myWorld.world()),
-        status=200,
-        mimetype='application/json'
-    )
+    if request.method == 'POST':
+        data = flask_post_json()
+        myWorld.clear()
+        for item in data.items():
+            myWorld.set(item)
+        response = app.response_class(
+            response=json.dumps(data),
+            status=200,
+            mimetype='application/json'
+        )
+        return response
+
+
+    elif request.method == 'GET':
+        response = app.response_class(
+            response=json.dumps(myWorld.get_update()),
+            status=200,
+            mimetype='application/json'
+        )
+        myWorld.clear_update()
     return response
 
 @app.route("/entity/<entity>")    
